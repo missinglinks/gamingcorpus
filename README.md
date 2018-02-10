@@ -6,3 +6,5 @@ Contains article scraper for:
 * IGN
 * Kotaku
 * Eurogamer
+* Gamasutra
+* Gameinformer

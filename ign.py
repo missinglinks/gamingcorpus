@@ -22,9 +22,12 @@ if __name__ == "__main__":
         
         for item in soup.find_all("item"):
             title = item.find("title").text.strip()
+            #print(item)
 
-            item_link = item.find("a")
-            if item_link:
+            item_links = item.find_all("a")
+
+            if item_links:
+                item_link = item_links[-1]
                 url = item_link["href"]
                 filename = "{}.json".format(url.replace("http://www.ign.com/articles/", "").replace("/","-"))
                 author = item.find("dc:creator").text
@@ -38,17 +41,20 @@ if __name__ == "__main__":
    
                     subhead = content.find("div", {"class": "article-subhead"})
 
+                    text_html = str(subhead)
                     text = subhead.text.replace("Share.", "").strip()+"\n"
                     for paragraph in content.find_all("p"):
                         if paragraph.text.strip() != "Exit Theatre Mode":
                             text += paragraph.text.strip()+"\n"
+                            text_html += " "+str(paragraph)
 
                     article = {
                         "url": url,
                         "author": author,
                         "title": title,
                         "publishing_date": publishing_date,
-                        "text": text
+                        "text": text,
+                        "text_html": text_html
                     }
 
                     article_store = Store(article, origin="ign.com", agent="gamingcorpus/ign.py", desc="IGN article scraper")

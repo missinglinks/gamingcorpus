@@ -45,11 +45,12 @@ if __name__ == "__main__":
                 author_id = author_link["href"].split("/")[-1]
                 publishing_date = byline.find("span")["content"]
 
+                text_html = ""
                 text = ""
                 section = content.find("article")
                 for paragraph in section.find_all("p", {"class": None}):
                     text += "\n"+paragraph.text
-                    
+                    text_html += " "+str(paragraph)
                 infobox = []
                 aside = content.find("aside")
                 if aside:
@@ -64,6 +65,7 @@ if __name__ == "__main__":
                     "author_id": author_id,
                     "publishing_date": publishing_date,
                     "text": text,
+                    "text_html": text_html,
                     "infobox": infobox
                 }
 

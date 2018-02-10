@@ -36,9 +36,9 @@ if __name__ == "__main__":
             else: 
                 author_name = author.text
                 author_link = ""
-
+            
             text = content.find("div", {"class": "post-content"}).text
-
+            text_html = str(content.find("div", {"class": "post-content"}))
             #print(author_name)
             #print(author_link) 
             #print(text)
@@ -49,7 +49,8 @@ if __name__ == "__main__":
                 "author_link": author_link,
                 "url": url,
                 "publishing_date": publishing_date,
-                "text": text
+                "text": text,
+                "text_html": text_html
             }
             article_store = Store(article, origin="kotaku.com", agent="gamingcorpus/kotaku.py", desc="Kotaku article scraper")
             article_store.save_to("{}/{}".format(OUT_DIR, filename))
