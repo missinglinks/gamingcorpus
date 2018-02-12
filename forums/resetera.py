@@ -1,171 +1,132 @@
-import requests
 import json
-from bs4 import BeautifulSoup
-import time
+from pit.store import Store
 import os
+import requests
+import lxml
+from bs4 import BeautifulSoup
+from .forum_scraper import ForumScraper
+import time
 
-OUT_DIR = "corpus/resetera"
+TIMEOUT = 0.1
+THREAD_URL = "https://www.resetera.com/threads/{id}/page-{page}"
 
-FORUMS = {
-    "resetera_etc": "https://www.resetera.com/forums/etcetera.9/page-{page}"
-}
-
-MAX_PAGES = 1000
-
-
-THREAD = "https://www.resetera.com/threads/{id}/page-{page}"
-
-def get_thread_posts(id_,start_post, end_post):
-    start_page = int(start_post/50)
-    end_page = int(end_post/50)
-    
-    posts = []
-    
-    for page in range(start_page+1, end_page+2):
-        print("\t\t page {}".format(page))
-        rsp = requests.get(THREAD.format(id=id_, page=page))
-        soup = BeautifulSoup(rsp.text, "html.parser")
-
-        for article in soup.find_all("article", {"class":"message--post"}):
-            post_id = article["data-content"]
-
-            user_details = article.find("h4", {"class": "message-name"})
-            user_link = user_details.find("a")
-            if user_link:
-                user = user_link.text.strip()
-                user_id = user_link["data-user-id"]
-            else:
-                user = user_details.text.strip()
-                user_id = None
-            
-            user_title = article.find("h5", {"class": "userTitle"}).text.strip()
-
-            permalink = article.find("div", {"class": "message-permalink"})
-            permalink = permalink.find("a")["href"]
-
-            #print(user_id, user)
-
-            content = article.find("div", {"class": "message-cell--main"})
-            date = content.find("time")["title"]
-
-            text_container = content.find("div", {"class": "bbWrapper"})
-            text = text_container.text.strip()
-            text_html = str(text_container)
-
-            posts.append({
-                "post_id": post_id,
-                "user": user,
-                "user_id": user_id,
-                "user_title": user_title,
-                "permalink": permalink,
-                "text_html": text_html
-            })
-        
-        time.sleep(0.2)
-        
-        #print(date)
-    return posts
-
-def get_thread_list(forum, url):
+class ReseteraScraper(ForumScraper):
+    forums = {
+        "resetera_etc": "https://www.resetera.com/forums/etcetera.9/page-{page}",
+        "resetera_vg": "https://www.resetera.com/forums/video-games.7/page-{page}",
+        "resetera_etc_hangouts": "https://www.resetera.com/forums/hangouts.10/page-{page}",
+        "resetera_vg_hangouts": "https://www.resetera.com/forums/hangouts.8/page-{page}"
+    }
     thread_list = []
 
-    for page in range(1, MAX_PAGES):
-        print("page ",page)
-        
-        rsp = requests.get(url.format(page=page))
-        soup = BeautifulSoup(rsp.text, "html.parser")
-        
-        current_page = soup.find("a",{"class": "currentPage"})
-        if not current_page:
-            current_page = soup.find("li", {"class": "pageNav-page--current"})
-    
-        current_page = int(current_page.text)
-        if current_page != page:
-            break 
+    origin = "resetera"
+    agent = "gamingcorpus/forums/resetera.py"
+    desc = "ResetEra forum scraper"
+
+    def get_thread_list(self, forum, url):
+        for page in range(1, self.max_pages):
+            print("page ",page)
             
-        for li in soup.find_all("li", {"class": "discussionListItem"}):
-            #skip sticky threads
-            if "sticky" not in li["class"]:
-                title = li.find("h3")
-                thread_url = title.find("a")["href"]
-                id_ = thread_url.split(".")[-1][:-1]
-                title = title.text.strip()
+            rsp = requests.get(url.format(page=page))
+            soup = BeautifulSoup(rsp.text, "html.parser")
+            
+            current_page = soup.find("a",{"class": "currentPage"})
+            
+            current_page = int(current_page.text)
+            if current_page != page:
+                break 
                 
-                reply_count = li.find("dl", {"class": "major"}).text.replace("Posts:", "").replace(",","").strip()
-                if reply_count.isdigit():
-                    reply_count = int(reply_count)
-                else:
-                    reply_count = 0
-                abbr = li.find("abbr", {"class": "DateTime"})
+            for li in soup.find_all("li", {"class": "discussionListItem"}):
+                #skip sticky threads
+                if "sticky" not in li["class"]:
+                    title = li.find("h3")
+                    thread_url = title.find("a")["href"]
+                    id_ = thread_url.split(".")[-1][:-1]
+                    title = title.text.strip()
+                    
+                    reply_count = li.find("dl", {"class": "major"}).text.replace("Posts:", "").replace(",","").strip()
+                    if reply_count.isdigit():
+                        reply_count = int(reply_count)
+                    else:
+                        reply_count = 0
+                    abbr = li.find("abbr", {"class": "DateTime"})
+                    
+                    if not abbr:
+                        date = li.find("a", {"class" : "faint"}).text
+                    else:
+                        date = abbr["data-datestring"]
+
+                    user_a = li.find("a", {"class": "username"})
+                    user = user_a.text.strip()
+                    user_id = user_a["href"].split(".")[-1][:-1]
+
+                    self.thread_list.append({
+                        "title": title,
+                        "id": id_,
+                        "user": user,
+                        "user_id": user_id,
+                        "start_date": date,
+                        "reply_count": reply_count     
+                    })
+
+            time.sleep(TIMEOUT)        
+
+    def get_thread_posts(self, id_, start_post, end_post):
+        start_page = int(start_post/50)
+        end_page = int(end_post/50)
+        
+        posts = []
+        
+        for page in range(start_page+1, end_page+2):
+            print("\t\t page {}".format(page))
+            rsp = requests.get(THREAD_URL.format(id=id_, page=page))
+            soup = BeautifulSoup(rsp.text, "html.parser")
+
+            for message in soup.find_all("li", {"class":"message"}):
+                post_id = message["id"]
+
+                user_details = message.find("h3", {"class": "userText"})
+                user_link = user_details.find("a", {"class": "username"})
+                if user_link:
+                    user = user_link.text.strip()
+                    try:
+                        user_id = user_link["href"].split(".")[-1][:-1]
+                    except:
+                        print(user)
+                        print(user_link)
+                        user_id = None
                 
-                if not abbr:
-                    date = li.find("a", {"class" : "faint"}).text
+                user_title = []
+                for user_title_element in user_details.find("em"):
+                    try:
+                        user_title.append(user_title_element.text.strip())
+                    except:
+                        #print(user_title_element)
+                        user_details.append(str(user_title_element))
+
+                abbr = message.find("abbr", {"class": "DateTime"})
+                if abbr:
+                    if "title" in abbr:
+                        date = abbr["title"]
+                    else:
+                        date = abbr.text.strip()
                 else:
-                    date = abbr["data-datestring"]
+                    date = message.find("span", {"class":"DateTime"}).text.strip()
 
-                user_a = li.find("a", {"class": "username"})
-                user = user_a.text.strip()
-                user_id = user_a["href"].split(".")[-1][:-1]
+                content = message.find("article")
+                text_container = content.find("blockquote")
+                text = text_container.text.strip()
+                text_html = str(text_container)
 
-                thread_list.append({
-                    "title": title,
-                    "id": id_,
+                posts.append({
+                    "post_id": post_id,
                     "user": user,
                     "user_id": user_id,
-                    "start_date": date,
-                    "reply_count": reply_count     
+                    "user_title": user_title,
+                    "permalink": "#{}".format(post_id),
+                    "text_html": text_html,
+                    "timestamp": date
                 })
-
-        time.sleep(0.2)
-        
-    return thread_list
-
-
-
-
-def main():
-
-    if not os.path.exists(OUT_DIR):
-        os.makedirs(OUT_DIR)
-
-    for forum, url in FORUMS.items():
-        
-        forum_dir = os.path.join(OUT_DIR, forum)
-        if not os.path.exists(forum_dir):
-            os.makedirs(forum_dir)
-
-        #get recent thread list
-        print("... getting new thread list")
-        thread_list = get_thread_list(forum, url)
-
-        #save new thread list
-        thread_list_filepath = os.path.join(OUT_DIR, "{}.json".format(forum))
-        with open(thread_list_filepath, "w") as f:
-            json.dump(thread_list, f)
-
-        """
-        #get new threads
-        for thread in thread_list:
-
-            print("\t scrape thread '{}'".format(thread["title"]))
-
-            year = thread["start_date"].split(" ")[-1].strip()
-            tmp_dir = os.path.join(forum_dir, year)
-            if not os.path.exists(tmp_dir):
-                os.makedirs(tmp_dir)
-            thread_filepath = os.path.join(tmp_dir, "{}.json".format(thread["id"]))
-            if not os.path.exists(thread_filepath):
-                posts = get_thread_posts(thread["id"], 0, thread["reply_count"]+1)
-                thread["posts"] = posts
-                
-                print("\t {} posts scraped".format(len(posts)))
-                print("")
-
-                with open(thread_filepath, "w") as f:
-                    json.dump(thread, f)
-            time.sleep(0.2)
-
-        """
-
-if __name__ == "__main__":
-    main()
+            
+            time.sleep(TIMEOUT)
+        return posts

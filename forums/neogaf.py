@@ -9,10 +9,14 @@ import time
 
 
 THREAD_URL = "https://www.neogaf.com/threads/{id}/page-{page}"
+TIMEOUT = 0.1
 
 class NeogafScraper(ForumScraper):
     forums = {
-        "neogaf_ot": "https://www.neogaf.com/forums/off-topic-discussion.22/page-{page}"
+        "neogaf_ot": "https://www.neogaf.com/forums/off-topic-discussion.22/page-{page}",
+        "neogaf_gaming": "https://www.neogaf.com/forums/gaming-discussion.2/page-{page}",
+        "neogaf_ot_community": "https://www.neogaf.com/forums/off-topic-community.20/page-{page}",
+        "neogaf_gaming_community": "https://www.neogaf.com/forums/gaming-discussion.2/page-{page}"
     }
     thread_list = []
 
@@ -65,7 +69,7 @@ class NeogafScraper(ForumScraper):
                     "start_date": start_date,
                     "reply_count": reply_count
                 })
-            time.sleep(0.2)        
+            time.sleep(TIMEOUT)        
 
     def get_thread_posts(self, id_, start_post, end_post):
         start_page = int(start_post/50)
@@ -108,8 +112,9 @@ class NeogafScraper(ForumScraper):
                     "user_id": user_id,
                     "user_title": user_title,
                     "permalink": permalink,
-                    "text_html": text_html
+                    "text_html": text_html,
+                    "timestamp": date
                 })
             
-            time.sleep(0.2)
+            time.sleep(TIMEOUT)
         return posts
