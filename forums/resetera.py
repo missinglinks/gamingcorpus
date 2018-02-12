@@ -24,6 +24,7 @@ class ReseteraScraper(ForumScraper):
     desc = "ResetEra forum scraper"
 
     def get_thread_list(self, forum, url):
+        thread_list = []
         for page in range(1, self.max_pages):
             print("page ",page)
             
@@ -60,7 +61,7 @@ class ReseteraScraper(ForumScraper):
                     user = user_a.text.strip()
                     user_id = user_a["href"].split(".")[-1][:-1]
 
-                    self.thread_list.append({
+                    thread_list.append({
                         "title": title,
                         "id": id_,
                         "user": user,
@@ -70,6 +71,7 @@ class ReseteraScraper(ForumScraper):
                     })
 
             time.sleep(TIMEOUT)        
+        return thread_list
 
     def get_thread_posts(self, id_, start_post, end_post):
         start_page = int(start_post/50)

@@ -39,7 +39,7 @@ class ForumScraper:
 
             #get recent thread list
             print("... getting new thread list")
-            self.get_thread_list(forum, url)
+            self.thread_list = self.get_thread_list(forum, url)
 
             #save new thread list
             thread_list_filepath = os.path.join(self.directory, "{}.json".format(forum))

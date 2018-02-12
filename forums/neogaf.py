@@ -61,7 +61,7 @@ class NeogafScraper(ForumScraper):
                 meta = item.find("div", {"class": "structItem-cell--meta"})
                 reply_count = int(meta.find("dd").text.replace(",", ""))
                 
-                self.thread_list.append({
+                thread_list.append({
                     "title": thread_title,
                     "id": thread_id,
                     "user": user,
@@ -70,6 +70,7 @@ class NeogafScraper(ForumScraper):
                     "reply_count": reply_count
                 })
             time.sleep(TIMEOUT)        
+        return thread_list
 
     def get_thread_posts(self, id_, start_post, end_post):
         start_page = int(start_post/50)
