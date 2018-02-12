@@ -9,6 +9,9 @@ import re
 CORPUS_DIR = "corpus"
 
 class RssArticleScraper:
+
+    headers={"User-Agent": "gamingcorpus-agent"}
+
     feeds = []
     articles = []
     origin = ""
@@ -38,8 +41,13 @@ class RssArticleScraper:
         for article in self.articles:
             
             article_filepath = os.path.join(self.directory, "{}.json".format(article["id"]))     
+            try:
+                article_store = Store(article, origin=self.origin, agent=self.agent, desc=self.desc)
+            except:
+                print(article)
 
-            article_store = Store(article, origin=self.origin, agent=self.agent, desc=self.desc)
+                article_store = Store(article, origin=self.origin, agent=self.agent, desc=self.desc)
+                break
             article_store.save_to(article_filepath)
 
 
