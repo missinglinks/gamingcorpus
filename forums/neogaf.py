@@ -18,13 +18,13 @@ class NeogafScraper(ForumScraper):
         "neogaf_ot_community": "https://www.neogaf.com/forums/off-topic-community.20/page-{page}",
         "neogaf_gaming_community": "https://www.neogaf.com/forums/gaming-discussion.2/page-{page}"
     }
-    thread_list = []
 
     origin = "neogaf"
     agent = "gamingcorpus/forums/neogaf.py"
     desc = "NeoGAF forum scraper"
 
     def get_thread_list(self, forum, url):
+        thread_list = []
         for page in range(1, self.max_pages):
             print("\t\t page {}".format(page))
             rsp = requests.get(url.format(page=page))
@@ -59,16 +59,21 @@ class NeogafScraper(ForumScraper):
                 start_date = start_date.find("time")["data-date-string"]
                 
                 meta = item.find("div", {"class": "structItem-cell--meta"})
-                reply_count = int(meta.find("dd").text.replace(",", ""))
+                reply_count = meta.find("dd").text.replace(",", "")
+                if reply_count.isdigit():
+                    reply_count = int(reply_count)
+                else:
+                    reply_count = 0
                 
-                thread_list.append({
-                    "title": thread_title,
-                    "id": thread_id,
-                    "user": user,
-                    "user_id": user_id,
-                    "start_date": start_date,
-                    "reply_count": reply_count
-                })
+                if thread_title.strip() != "":
+                    thread_list.append({
+                        "title": thread_title,
+                        "id": thread_id,
+                        "user": user,
+                        "user_id": user_id,
+                        "start_date": start_date,
+                        "reply_count": reply_count
+                    })
             time.sleep(TIMEOUT)        
         return thread_list
 

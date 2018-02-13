@@ -61,14 +61,15 @@ class ReseteraScraper(ForumScraper):
                     user = user_a.text.strip()
                     user_id = user_a["href"].split(".")[-1][:-1]
 
-                    thread_list.append({
-                        "title": title,
-                        "id": id_,
-                        "user": user,
-                        "user_id": user_id,
-                        "start_date": date,
-                        "reply_count": reply_count     
-                    })
+                    if title.strip() != "":
+                        thread_list.append({
+                            "title": title,
+                            "id": id_,
+                            "user": user,
+                            "user_id": user_id,
+                            "start_date": date,
+                            "reply_count": reply_count     
+                        })
 
             time.sleep(TIMEOUT)        
         return thread_list

@@ -66,4 +66,4 @@ class ForumScraper:
                     print("")
                     thread_store = Store(thread, origin=self.origin, agent=self.agent, desc=self.desc)
                     thread_store.save_to(thread_filepath)
-                time.sleep(0.2)
+                #time.sleep(0.2)
