@@ -1,10 +1,10 @@
 import json
-from pit.store import Store
 import os
 import requests
 import lxml
 from bs4 import BeautifulSoup
 import re
+from datetime import datetime 
 
 CORPUS_DIR = "corpus"
 
@@ -41,15 +41,25 @@ class RssArticleScraper:
         for article in self.articles:
             
             article_filepath = os.path.join(self.directory, "{}.json".format(article["id"]))     
-            try:
-                article_store = Store(article, origin=self.origin, agent=self.agent, desc=self.desc)
-            except:
-                print(article)
+            # try:
+            #     article_store = Store(article, origin=self.origin, agent=self.agent, desc=self.desc)
+            # except:
+            #     print(article)
 
-                article_store = Store(article, origin=self.origin, agent=self.agent, desc=self.desc)
-                break
-            article_store.save_to(article_filepath)
-
+            #     article_store = Store(article, origin=self.origin, agent=self.agent, desc=self.desc)
+            #     break
+            # article_store.save_to(article_filepath)
+            out_data = {
+                "data": article,
+                "prov": {
+                    "origin": self.origin,
+                    "agent": self.agent,
+                    "desc": self.desc,
+                    "date": datetime.now().isoformat()
+                }
+            }
+            with open(article_filepath,"w") as f:
+                json.dump(out_data, f)
 
 
 HTML_REGEX = re.compile('<.*?>')
